@@ -1,0 +1,2 @@
+resolvers in ThisBuild += "lightbend-commercial-mvn" at "https://repo.akka.io/pass/O6DBaazOZjqLCFk26xDqNvl2heWwkVmWoX6ndZsZdDUeynCN/commercial-releases"
+	resolvers in ThisBuild += Resolver.url("lightbend-commercial-ivy", url("https://repo.akka.io/pass/O6DBaazOZjqLCFk26xDqNvl2heWwkVmWoX6ndZsZdDUeynCN/commercial-releases"))(Resolver.ivyStylePatterns)
