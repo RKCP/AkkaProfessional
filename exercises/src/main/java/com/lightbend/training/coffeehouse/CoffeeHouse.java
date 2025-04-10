@@ -13,11 +13,22 @@ public class CoffeeHouse extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
         return ReceiveBuilder.create()
-                .matchAny(msg -> sender().tell(msg.toString(), self()))
+                .match(CreateGuest.class, createGuest -> createGuest())
                 .build();
+    }
+
+    protected void createGuest() {
+        context().actorOf(Guest.props()); // creates a child actor instead of a top level actor.
     }
 
     public static Props props() {
         return Props.create(CoffeeHouse.class, CoffeeHouse::new);
+    }
+
+    public static final class CreateGuest {
+
+        public static final CreateGuest Instance = new CreateGuest(); // cant create instances since constructor is private. Can only CreateGuest.Instance.
+
+        private CreateGuest() {} // private constructor to not ruin the singleton pattern
     }
 }
