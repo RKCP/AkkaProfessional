@@ -81,12 +81,6 @@
         </dependency>
 
         <!-- Akka TestKit -->
-<!--        <dependency>-->
-<!--            <groupId>com.typesafe.akka</groupId>-->
-<!--            <artifactId>akka-testkit_2.12</artifactId>-->
-<!--            <version>2.5.31</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-testkit_2.12</artifactId>
