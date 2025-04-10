@@ -13,7 +13,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
         return ReceiveBuilder.create()
-                .matchAny(msg -> log().info("Coffee Elemental Brewing"))
+                .matchAny(msg -> sender().tell(msg.toString(), self()))
                 .build();
     }
 

@@ -3,10 +3,13 @@
  */
 package com.lightbend.training.coffeehouse;
 
+import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.japi.pf.ReceiveBuilder;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
@@ -30,13 +33,34 @@ public class CoffeeHouseApp implements Terminal{
     private final LoggingAdapter log;
 
     @SuppressWarnings("unused")
-    private final ActorRef coffeeHouse;
+    private final ActorRef coffeeHouse; // reference to the actual actor
 
     public CoffeeHouseApp(final ActorSystem system){
         this.system = system;
         log = Logging.getLogger(system, getClass().getName());
         coffeeHouse = createCoffeeHouse();
-        coffeeHouse.tell("Elemental Brewing Coffee", ActorRef.noSender());
+        system.actorOf(printerProps(coffeeHouse)); // creates an anonymous actor, based on whatever props
+        // we put into printer props, and then send the message to coffeeHouse.
+    }
+
+    /**
+     * Creates an anonymous Actor which we spin up and run.
+     * @param coffeeHouse
+     * @return
+     */
+    private Props printerProps(ActorRef coffeeHouse) {
+        return Props.create(AbstractLoggingActor.class, () -> new AbstractLoggingActor() { // creates a regular actor on left, then a builder/creator on the right
+            {
+                coffeeHouse.tell("Brew Coffee please", self());
+            }
+
+            @Override
+            public Receive createReceive() {
+                return ReceiveBuilder.create()
+                        .matchAny(msg -> log().info(msg.toString()))
+                        .build();
+            }
+        });
     }
 
     public static void main(final String[] args) throws Exception{
