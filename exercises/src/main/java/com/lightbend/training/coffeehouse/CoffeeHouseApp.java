@@ -36,6 +36,7 @@ public class CoffeeHouseApp implements Terminal{
         this.system = system;
         log = Logging.getLogger(system, getClass().getName());
         coffeeHouse = createCoffeeHouse();
+        coffeeHouse.tell("Elemental Brewing Coffee", ActorRef.noSender());
     }
 
     public static void main(final String[] args) throws Exception{
