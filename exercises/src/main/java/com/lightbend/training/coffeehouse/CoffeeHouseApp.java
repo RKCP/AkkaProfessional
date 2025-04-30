@@ -39,28 +39,6 @@ public class CoffeeHouseApp implements Terminal{
         this.system = system;
         log = Logging.getLogger(system, getClass().getName());
         coffeeHouse = createCoffeeHouse();
-        system.actorOf(printerProps(coffeeHouse)); // creates an anonymous actor, based on whatever props
-        // we put into printer props, and then send the message to coffeeHouse.
-    }
-
-    /**
-     * Creates an anonymous Actor which we spin up and run.
-     * @param coffeeHouse
-     * @return
-     */
-    private Props printerProps(ActorRef coffeeHouse) {
-        return Props.create(AbstractLoggingActor.class, () -> new AbstractLoggingActor() { // creates a regular actor on left, then a builder/creator on the right
-            {
-                coffeeHouse.tell("Brew Coffee please", self());
-            }
-
-            @Override
-            public Receive createReceive() {
-                return ReceiveBuilder.create()
-                        .matchAny(msg -> log().info(msg.toString()))
-                        .build();
-            }
-        });
     }
 
     public static void main(final String[] args) throws Exception{

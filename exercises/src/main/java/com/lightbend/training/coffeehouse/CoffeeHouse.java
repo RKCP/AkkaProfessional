@@ -18,7 +18,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
     }
 
     protected void createGuest() {
-        context().actorOf(Guest.props()); // creates a child actor instead of a top level actor.
+        context().actorOf(Guest.props()); // creates a child actor instead of a top level actor. (due to using context())
     }
 
     public static Props props() {
