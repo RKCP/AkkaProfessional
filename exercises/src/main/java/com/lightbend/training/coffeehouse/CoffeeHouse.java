@@ -4,14 +4,22 @@ import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Objects;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CoffeeHouse extends AbstractLoggingActor {
 
     private final ActorRef waiter = createWaiter();
+
+    private final FiniteDuration coffeeFinishedDuration = FiniteDuration.create(
+            context().system().settings().config().getDuration(
+                    "coffee-house.guest.finish-coffee-duration",
+                    MILLISECONDS), MILLISECONDS
+            );
 
     public CoffeeHouse() {
         log().debug("CoffeeHouse Open");
@@ -25,7 +33,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
     }
 
     protected void createGuest(Coffee favouriteCoffee) {
-        context().actorOf(Guest.props(waiter, favouriteCoffee)); // creates a child actor instead of a top level actor. (due to using context())
+        context().actorOf(Guest.props(waiter, favouriteCoffee, coffeeFinishedDuration)); // creates a child actor instead of a top level actor. (due to using context())
     }
 
     public static Props props() {
