@@ -13,13 +13,19 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CoffeeHouse extends AbstractLoggingActor {
 
-    private final ActorRef waiter = createWaiter();
-
+    private final FiniteDuration prepareCoffeeDuration = FiniteDuration.create(
+            context().system().settings().config().getDuration(
+                    "coffee-house.barista.prepare-coffee-duration",
+                    MILLISECONDS), MILLISECONDS
+    );
     private final FiniteDuration coffeeFinishedDuration = FiniteDuration.create(
             context().system().settings().config().getDuration(
                     "coffee-house.guest.finish-coffee-duration",
                     MILLISECONDS), MILLISECONDS
             );
+    // depend on finiteDurations to pull from config, so put after. waiter relies on barista, hence its order
+    private final ActorRef barista = createBarista();
+    private final ActorRef waiter = createWaiter();
 
     public CoffeeHouse() {
         log().debug("CoffeeHouse Open");
@@ -40,8 +46,12 @@ public class CoffeeHouse extends AbstractLoggingActor {
         return Props.create(CoffeeHouse.class, CoffeeHouse::new);
     }
 
+    protected ActorRef createBarista() {
+        return getContext().actorOf(Barista.props(prepareCoffeeDuration), "barista");
+    }
+
     protected ActorRef createWaiter() {
-        return getContext().actorOf(Waiter.props(), "waiter");
+        return getContext().actorOf(Waiter.props(barista), "waiter");
     }
 
     public static final class CreateGuest {
