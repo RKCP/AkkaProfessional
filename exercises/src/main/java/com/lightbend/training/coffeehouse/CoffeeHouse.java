@@ -26,9 +26,11 @@ public class CoffeeHouse extends AbstractLoggingActor {
     // depend on finiteDurations to pull from config, so put after. waiter relies on barista, hence its order
     private final ActorRef barista = createBarista();
     private final ActorRef waiter = createWaiter();
+    private final int caffineLimit;
 
-    public CoffeeHouse() {
+    public CoffeeHouse(int caffineLimit) {
         log().debug("CoffeeHouse Open");
+        this.caffineLimit = caffineLimit;
     }
 
     @Override
@@ -42,8 +44,8 @@ public class CoffeeHouse extends AbstractLoggingActor {
         context().actorOf(Guest.props(waiter, favouriteCoffee, coffeeFinishedDuration)); // creates a child actor instead of a top level actor. (due to using context())
     }
 
-    public static Props props() {
-        return Props.create(CoffeeHouse.class, CoffeeHouse::new);
+    public static Props props(int caffineLimit) {
+        return Props.create(CoffeeHouse.class, () -> new CoffeeHouse(caffineLimit));
     }
 
     protected ActorRef createBarista() {
@@ -51,8 +53,8 @@ public class CoffeeHouse extends AbstractLoggingActor {
     }
 
     protected ActorRef createWaiter() {
-        return getContext().actorOf(Waiter.props(barista), "waiter");
-    }
+        return getContext().actorOf(Waiter.props(self()), "waiter");
+    } // waiter checks coffee house limit when requesting a coffee...
 
     public static final class CreateGuest {
 
@@ -81,6 +83,39 @@ public class CoffeeHouse extends AbstractLoggingActor {
         public String toString() {
             return "CreateGuest{" +
                     "favouriteCofee=" + favouriteCoffee +
+                    '}';
+        }
+    }
+
+    public static final class ApproveCoffee {
+        public final Coffee coffee;
+        public final ActorRef guest;
+
+        public ApproveCoffee(Coffee coffee, ActorRef guest) {
+            checkNotNull(coffee, "Coffee cannot be null!");
+            checkNotNull(guest, "Guest cannot be null!");
+            this.coffee = coffee;
+            this.guest = guest;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ApproveCoffee that = (ApproveCoffee) o;
+            return Objects.equals(coffee, that.coffee) && Objects.equals(guest, that.guest);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(coffee, guest);
+        }
+
+        @Override
+        public String toString() {
+            return "ApproveCoffee{" +
+                    "coffee=" + coffee +
+                    ", guest=" + guest +
                     '}';
         }
     }
