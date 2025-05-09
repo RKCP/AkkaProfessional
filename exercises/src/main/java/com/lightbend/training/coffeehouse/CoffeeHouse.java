@@ -41,7 +41,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
     public Receive createReceive() {
         return ReceiveBuilder.create()
                 .match(CreateGuest.class, createGuest -> {
-                    final ActorRef guest = createGuest(createGuest.favouriteCoffee);
+                    final ActorRef guest = createGuest(createGuest.favouriteCoffee, createGuest.caffeineLimit);
                     addNewGuestToGuestbook(guest);
                     context().watch(guest); // subscribes coffee house for stream of terminations
                 })
@@ -80,8 +80,8 @@ public class CoffeeHouse extends AbstractLoggingActor {
         log().debug("{} removed from guestbook", guest);
     }
 
-    protected ActorRef createGuest(Coffee favouriteCoffee) {
-        return context().actorOf(Guest.props(waiter, favouriteCoffee, coffeeFinishedDuration)); // creates a child actor instead of a top level actor. (due to using context())
+    protected ActorRef createGuest(Coffee favouriteCoffee, int guestCaffeineLimit) {
+        return context().actorOf(Guest.props(waiter, favouriteCoffee, coffeeFinishedDuration, guestCaffeineLimit)); // creates a child actor instead of a top level actor. (due to using context())
     }
 
     public static Props props(int caffineLimit) {
@@ -100,10 +100,13 @@ public class CoffeeHouse extends AbstractLoggingActor {
 
 //        public static final CreateGuest Instance = new CreateGuest(); // cant create instances since constructor is private. Can only CreateGuest.Instance.
         public final Coffee favouriteCoffee;
+        public final int caffeineLimit;
 
-        public CreateGuest(Coffee favouriteCoffee) {
+        public CreateGuest(Coffee favouriteCoffee, int caffeineLimit) {
             checkNotNull(favouriteCoffee, "Favourite coffee cannot be null");
+            checkNotNull(caffeineLimit, "caffeine limit cannot be null");
             this.favouriteCoffee = favouriteCoffee;
+            this.caffeineLimit = caffeineLimit;
         }
 
         @Override
@@ -111,18 +114,19 @@ public class CoffeeHouse extends AbstractLoggingActor {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             CreateGuest that = (CreateGuest) o;
-            return Objects.equals(favouriteCoffee, that.favouriteCoffee);
+            return caffeineLimit == that.caffeineLimit && Objects.equals(favouriteCoffee, that.favouriteCoffee);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(favouriteCoffee);
+            return Objects.hash(favouriteCoffee, caffeineLimit);
         }
 
         @Override
         public String toString() {
             return "CreateGuest{" +
-                    "favouriteCofee=" + favouriteCoffee +
+                    "favouriteCoffee=" + favouriteCoffee +
+                    ", caffeineLimit=" + caffeineLimit +
                     '}';
         }
     }

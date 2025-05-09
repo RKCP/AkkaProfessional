@@ -10,11 +10,13 @@ public class Guest extends AbstractLoggingActorWithTimers {
     private final Coffee favouriteCoffee;
     private int coffeeCount = 0;
     private final FiniteDuration coffeeFinishedDuration;
+    private final int caffeineLimit;
 
-    public Guest(ActorRef waiter, Coffee favouriteCoffee, FiniteDuration coffeeFinishedDuration) {
+    public Guest(ActorRef waiter, Coffee favouriteCoffee, FiniteDuration coffeeFinishedDuration, int caffeineLimit) {
         this.waiter = waiter;
         this.favouriteCoffee = favouriteCoffee;
         this.coffeeFinishedDuration = coffeeFinishedDuration;
+        this.caffeineLimit = caffeineLimit;
         orderFavouriteCoffee(); // once a guest enters the coffee house, we will order a coffee
     }
 
@@ -26,6 +28,9 @@ public class Guest extends AbstractLoggingActorWithTimers {
                     coffeeCount++;
                     log().info("Enjoying my {} yummy {}!", coffeeCount, coffeeServed.coffee);
                     scheduleCoffeeFinished();
+                })
+                .match(CoffeeFinished.class, coffeeFinished -> coffeeCount > this.caffeineLimit, coffeeFinished -> {
+                    throw new CaffeineException(); // if the count of coffee's drunk is more than the given limit
                 })
                 .match(CoffeeFinished.class, coffeeFinished ->
                     orderFavouriteCoffee())
@@ -41,8 +46,8 @@ public class Guest extends AbstractLoggingActorWithTimers {
         this.waiter.tell(new Waiter.ServeCoffee(this.favouriteCoffee), self());
     }
 
-    public static Props props(final ActorRef waiter, final Coffee favouriteCoffee, final FiniteDuration coffeeFinishedDuration) {
-        return Props.create(Guest.class, () -> new Guest(waiter, favouriteCoffee, coffeeFinishedDuration));
+    public static Props props(final ActorRef waiter, final Coffee favouriteCoffee, final FiniteDuration coffeeFinishedDuration, final int caffeineLimit) {
+        return Props.create(Guest.class, () -> new Guest(waiter, favouriteCoffee, coffeeFinishedDuration, caffeineLimit));
     }
 
     private void scheduleCoffeeFinished() {
@@ -56,6 +61,14 @@ public class Guest extends AbstractLoggingActorWithTimers {
 
         private CoffeeFinished() {
 
+        }
+    }
+
+    public static final class CaffeineException extends IllegalStateException {
+        static final long serialVersionUID = 1;
+
+        public CaffeineException() {
+            super("Too much caffeiene!");
         }
     }
 }
