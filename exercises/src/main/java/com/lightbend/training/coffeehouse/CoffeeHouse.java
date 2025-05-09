@@ -6,6 +6,8 @@ import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -27,6 +29,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
     private final ActorRef barista = createBarista();
     private final ActorRef waiter = createWaiter();
     private final int caffineLimit;
+    private final Map<ActorRef, Integer> guestbook = new HashMap<>();
 
     public CoffeeHouse(int caffineLimit) {
         log().debug("CoffeeHouse Open");
@@ -36,12 +39,38 @@ public class CoffeeHouse extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
         return ReceiveBuilder.create()
-                .match(CreateGuest.class, createGuest -> createGuest(createGuest.favouriteCoffee))
+                .match(CreateGuest.class, createGuest -> {
+                    final ActorRef guest = createGuest(createGuest.favouriteCoffee);
+                    addNewGuestToGuestbook(guest);
+                })
+                .match(ApproveCoffee.class, this::coffeeApproved, approveCoffee -> {
+                    barista.forward(new Barista.PrepareCoffee(approveCoffee.coffee, approveCoffee.guest), context());
+                })
+                .match(ApproveCoffee.class, approveCoffee -> { // will fall through to this block if coffee wasn't approved
+                    log().info("Sorry, {} is at the daily coffee limit.", approveCoffee.guest);
+                    context().stop(approveCoffee.guest);
+                })
                 .build();
     }
 
-    protected void createGuest(Coffee favouriteCoffee) {
-        context().actorOf(Guest.props(waiter, favouriteCoffee, coffeeFinishedDuration)); // creates a child actor instead of a top level actor. (due to using context())
+    private boolean coffeeApproved(ApproveCoffee approveCoffee) {
+        ActorRef guest = approveCoffee.guest;
+        final int guestCoffeeCount = guestbook.get(guest);
+        if (guestCoffeeCount < caffineLimit) {
+            guestbook.put(guest, guestCoffeeCount + 1);
+            log().info("Guest {} coffee count increased.", guest);
+            return true;
+        }
+        return false;
+    }
+
+    private void addNewGuestToGuestbook(ActorRef guest) {
+        guestbook.put(guest, 0);
+        log().debug("Guest {} was added to guestbook", guest);
+    }
+
+    protected ActorRef createGuest(Coffee favouriteCoffee) {
+        return context().actorOf(Guest.props(waiter, favouriteCoffee, coffeeFinishedDuration)); // creates a child actor instead of a top level actor. (due to using context())
     }
 
     public static Props props(int caffineLimit) {

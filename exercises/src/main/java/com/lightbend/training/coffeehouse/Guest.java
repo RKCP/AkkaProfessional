@@ -32,6 +32,11 @@ public class Guest extends AbstractLoggingActorWithTimers {
                 .build();
     }
 
+    @Override
+    public void postStop() {
+        log().info("Goodbye!");
+    }
+
     private void orderFavouriteCoffee() {
         this.waiter.tell(new Waiter.ServeCoffee(this.favouriteCoffee), self());
     }

@@ -10,25 +10,25 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Waiter extends AbstractLoggingActor {
 
-    private ActorRef barista;
+    private ActorRef coffeeHouse;
 
-    public Waiter(ActorRef barista) {
-        this.barista = barista;
+    public Waiter(ActorRef coffeeHouse) {
+        this.coffeeHouse = coffeeHouse;
     }
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
                 .match(ServeCoffee.class, serveCoffee -> // match on ServeCoffee.class. Whenever we receive a ServeCoffee, we will execute code in functional method.
-                    this.barista.tell(new Barista.PrepareCoffee(serveCoffee.coffee, sender()),self())
+                    this.coffeeHouse.tell(new CoffeeHouse.ApproveCoffee(serveCoffee.coffee, sender()),self())
 //                    sender().tell(new CoffeeServed(serveCoffee.coffee), self()); // send new CoffeeServed msg, and the Coffee that was served, with self() as the sender (this actor))
                 ).match(Barista.CoffeePrepared.class, coffeePrepared ->
                     coffeePrepared.customer.tell(new CoffeeServed(coffeePrepared.coffeePrepared), self()))
                 .build();
     }
 
-    public static Props props(ActorRef barista) {
-        return Props.create(Waiter.class, () -> new Waiter(barista));
+    public static Props props(ActorRef coffeeHouse) {
+        return Props.create(Waiter.class, () -> new Waiter(coffeeHouse));
     }
 
 
