@@ -1,9 +1,7 @@
 package com.lightbend.training.coffeehouse;
 
-import akka.actor.AbstractLoggingActor;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.Terminated;
+import akka.actor.*;
+import akka.japi.pf.DeciderBuilder;
 import akka.japi.pf.ReceiveBuilder;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -57,6 +55,16 @@ public class CoffeeHouse extends AbstractLoggingActor {
                     removeGuestFromGuestbook(terminated.actor());
                 })
                 .build();
+    }
+
+    @Override
+    public SupervisorStrategy supervisorStrategy() {
+        return new OneForOneStrategy(false,
+                DeciderBuilder
+                        .match(Guest.CaffeineException.class, e -> SupervisorStrategy.stop()) // when guest has too many coffees (caffeine exception), stop that actor
+                        .build()
+                        .orElse(super.supervisorStrategy().decider()) // outside of caffeine exception, use super class for other exceptions
+                ); // just the individual guest actor that throws the exception will be restarted, no other guests will be impacted
     }
 
     private boolean coffeeApproved(ApproveCoffee approveCoffee) {
