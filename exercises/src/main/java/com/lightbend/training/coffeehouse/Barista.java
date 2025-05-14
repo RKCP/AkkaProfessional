@@ -6,19 +6,22 @@ import akka.actor.Props;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Objects;
+import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Barista extends AbstractLoggingActor {
 
     private final FiniteDuration prepareCoffeeDuration;
+    private final int accuracy; // percetnage of time barista gets things correct
 
-    public Barista(FiniteDuration prepareCoffeeDuration) {
+    public Barista(FiniteDuration prepareCoffeeDuration, int accuracy) {
         this.prepareCoffeeDuration = prepareCoffeeDuration;
+        this.accuracy = accuracy;
     }
 
-    public static Props props(FiniteDuration prepareCoffeeDuration) {
-        return Props.create(Barista.class, ()-> new Barista(prepareCoffeeDuration));
+    public static Props props(FiniteDuration prepareCoffeeDuration, int accuracy) {
+        return Props.create(Barista.class, ()-> new Barista(prepareCoffeeDuration, accuracy));
     }
 
     @Override
@@ -26,8 +29,12 @@ public class Barista extends AbstractLoggingActor {
         return receiveBuilder()
                 .match(PrepareCoffee.class, prepareCoffee -> {
                     Busy.busy(this.prepareCoffeeDuration);
-                    sender().tell(new CoffeePrepared(prepareCoffee.coffeeToPrepare, prepareCoffee.customer), self());
+                    sender().tell(new CoffeePrepared(pickCoffee(prepareCoffee.coffeeToPrepare), prepareCoffee.customer), self());
                 }).build();
+    }
+
+    private Coffee pickCoffee(Coffee coffee) {
+        return new Random().nextInt(100) < accuracy ?  coffee : Coffee.orderOther(coffee);
     }
 
 

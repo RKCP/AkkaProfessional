@@ -24,6 +24,17 @@ public class CoffeeHouse extends AbstractLoggingActor {
                     "coffee-house.guest.finish-coffee-duration",
                     MILLISECONDS), MILLISECONDS
             );
+
+    private final int baristaAccuracy =
+            context().system().settings().config().getInt(
+                    "coffee-house.barista.accuracy"
+            );
+
+    private final int waiterMaxComplaintCount =
+            context().system().settings().config().getInt(
+                    "coffee-house.waiter.max-complaint-count"
+            );
+
     // depend on finiteDurations to pull from config, so put after. waiter relies on barista, hence its order
     private final ActorRef barista = createBarista();
     private final ActorRef waiter = createWaiter();
@@ -65,6 +76,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
                         .build()
                         .orElse(super.supervisorStrategy().decider()) // outside of caffeine exception, use super class for other exceptions
                 ); // just the individual guest actor that throws the exception will be restarted, no other guests will be impacted
+        // must override default supervisor strategy in the parent of whatever class/actor you are dealing with. We are dealing with the guest, and its parent is the coffee house.
     }
 
     private boolean coffeeApproved(ApproveCoffee approveCoffee) {
@@ -97,11 +109,11 @@ public class CoffeeHouse extends AbstractLoggingActor {
     }
 
     protected ActorRef createBarista() {
-        return getContext().actorOf(Barista.props(prepareCoffeeDuration), "barista");
+        return getContext().actorOf(Barista.props(prepareCoffeeDuration, baristaAccuracy), "barista");
     }
 
     protected ActorRef createWaiter() {
-        return getContext().actorOf(Waiter.props(self()), "waiter");
+        return getContext().actorOf(Waiter.props(self(), barista, waiterMaxComplaintCount), "waiter");
     } // waiter checks coffee house limit when requesting a coffee...
 
     public static final class CreateGuest {

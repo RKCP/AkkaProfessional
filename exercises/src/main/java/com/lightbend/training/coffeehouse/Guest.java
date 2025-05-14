@@ -24,10 +24,14 @@ public class Guest extends AbstractLoggingActorWithTimers {
     public Receive createReceive() {
 //        return emptyBehavior(); // a way for us to create an actor with a behavior, without fleshing it out for now
         return receiveBuilder()
-                .match(Waiter.CoffeeServed.class, coffeeServed -> {
+                .match(Waiter.CoffeeServed.class, coffeeServed -> coffeeServed.coffee.equals(favouriteCoffee), coffeeServed -> {
                     coffeeCount++;
                     log().info("Enjoying my {} yummy {}!", coffeeCount, coffeeServed.coffee);
                     scheduleCoffeeFinished();
+                })
+                .match(Waiter.CoffeeServed.class, coffeeServed -> {
+                    log().info("Expected a {}, but received a {} instead!", favouriteCoffee, coffeeServed.coffee);
+                    waiter.tell(new Waiter.Complaint(favouriteCoffee), self());
                 })
                 .match(CoffeeFinished.class, coffeeFinished -> coffeeCount > this.caffeineLimit, coffeeFinished -> {
                     throw new CaffeineException(); // if the count of coffee's drunk is more than the given limit
