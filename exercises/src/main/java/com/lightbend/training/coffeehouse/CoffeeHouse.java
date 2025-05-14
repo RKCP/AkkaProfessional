@@ -70,7 +70,7 @@ public class CoffeeHouse extends AbstractLoggingActor {
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
-        return new OneForOneStrategy(false,
+        return new OneForOneStrategy(true,
                 DeciderBuilder
                         .match(Guest.CaffeineException.class, e -> SupervisorStrategy.stop()) // when guest has too many coffees (caffeine exception), stop that actor
                         .build()
